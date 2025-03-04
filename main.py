@@ -100,11 +100,13 @@ async def finish_registration(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     await db.register_user(callback.from_user.id, data['name'], data['photo'])
     await callback.message.answer('Вы успешно прошли регистрацию! Ждите дальнейших указаний')
+    await state.clear()
 
 
 @dp.callback_query(F.data == 'wait')
 async def wait(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer('Отлично! Отдыхайте и готовьтесь к следующему этапу.')
+    await state.clear()
 
 
 @dp.message(F.text, Command('admin'))

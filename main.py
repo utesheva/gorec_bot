@@ -148,6 +148,24 @@ async def process_message(message: Message, state: FSMContext):
             logging.error(f"Не удалось отправить сообщение пользователю {user_id[0]}: {e}")
     await message.answer('Рассылка завершена.')
     await state.clear()
+    
+@dp.message(F.text, Command("shuffle_players"))
+async def send_victims(message: Message, state: FSMContext):
+    if not await db.is_admin(str(message.from_user.id)):
+        await message.answer('У вас нет прав администратора.')
+        return
+    shuffled_players = await db.shuffle_players()
+    if len(shuffled_players) == 0:
+        await message.answer('Для старта игры недостаточно игроков')
+        return
+    users = await db.get_data()
+    for user in users:
+        try:
+            await message.bot.send_message(user[4], f"Your victim is {users[user[3]][4]}")
+        except Exception as e:
+            logging.error(f"Не удалось отправить сообщение пользователю {user[0]}: {e}")
+    await message.answer('Рассылка завершена.')
+    await state.clear()
 
 
 async def main() -> None:

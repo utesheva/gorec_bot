@@ -1,4 +1,5 @@
 import psycopg
+import random
 from config_reader import config
 
 
@@ -72,4 +73,22 @@ async def make_admin(tg_id: str):
         async with conn.cursor() as cursor:
             await cursor.execute('UPDATE users SET admin=%s WHERE tg_id=%s', (True, tg_id))
             await conn.commit()
+            
+async def set_victim(id_current, id_victim: int):
+    async with await get_connection() as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute('UPDATE users SET victim=%d WHERE user_id=%d', (id_victim, id_current))
+            await conn.commit()
+
+
+async def shuffle_players():
+    all_users = await get_data()
+    players = [i for i in all_users if not i[-1] ]
+    if len(players) < 2:
+        return []
+    random.shuffle(players)
+    for i in range(1, len(players)):
+        await set_victim(players[i-1], players[i])
+    await set_victim(players[-1], players[0])
+    
 

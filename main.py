@@ -148,8 +148,53 @@ async def process_message(message: Message, state: FSMContext):
             logging.error(f"Не удалось отправить сообщение пользователю {user_id[0]}: {e}")
     await message.answer('Рассылка завершена.')
     await state.clear()
+    
+@dp.message(F.text, Command("shuffle_players"))
+async def send_victims(message: Message, state: FSMContext):
+    if not await db.is_admin(str(message.from_user.id)):
+        await message.answer('У вас нет прав администратора.')
+        return
+    shuffled_players = await db.shuffle_players()
+    if len(shuffled_players) == 0:
+        await message.answer('Для старта игры недостаточно игроков')
+        return
+    users = await db.get_data()
+    for user in users:
+        try:
+            await message.bot.send_message(user[4], f"Your victim is {users[user[3]][1]}")
+        except Exception as e:
+            logging.error(f"Не удалось отправить сообщение пользователю {user[0]}: {e}")
+    await message.answer('Рассылка завершена.')
+    await state.clear()
 
-
+@dp.message(F.text, Command("kill"))
+async def register_kill(message: Message, state: FSMContext):
+    users = await db.get_data()
+    check = InlineKeyboardBuilder()
+    check.add(InlineKeyboardButton(
+        text="Подтверждаю",
+        callback_data="agree")
+    )
+    check.add(InlineKeyboardButton(
+        text = 'Он(а) врет',
+        callback_data='refuse'
+    ))
+    user = await db.get_user(str(message.from_user.id))
+    await message.bot.send_message(users[user[3]][4], "Подтвердите, что вы были убиты", reply_markup=check.as_markup)
+    
+@dp.callback_query(F.data == 'true')
+async def confirm_kill(message: Message, state: FSMContext):
+    users = await db.get_data()
+    for user in users:
+        victim = user[3]
+        if victim[4] == message.from_user.id:
+            #user[3].add_point()
+            user[3] = victim[3]
+            #victim.is_dead()
+            await message.bot.send_message(user[4], f"Подтверждение получено, вы получили свои баллы. Ваша новая жертва: {users[user[3]][1]}")
+            return
+    
+    
 async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     await dp.start_polling(bot)

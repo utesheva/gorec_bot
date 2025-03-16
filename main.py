@@ -171,6 +171,9 @@ async def send_victims(message: Message, state: FSMContext):
 
 @dp.message(F.text, Command("kill"))
 async def register_kill(message: Message, state: FSMContext):
+    if await db.is_dead(str(message.from_user.id)):
+        await message.answer('К сожалению, вы уже выбыли из игры.')
+        return
     users = await db.get_data()
     check = InlineKeyboardBuilder()
     check.add(InlineKeyboardButton(
@@ -187,7 +190,7 @@ async def register_kill(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data == 'true')
 async def confirm_kill(message: Message, state: FSMContext):
-    users = await db.get_data()
+    users = await db.get_alive()
     for user in users:
         victim = user[3]
         if victim[4] == message.from_user.id:
@@ -199,7 +202,7 @@ async def confirm_kill(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data == 'refuse')
 async def reject_kill(message: Message, state: FSMContext):
-    users = await db.get_data()
+    users = await db.get_alive()
     for user in users:
         victim = user[3]
         if victim[4] == message.from_user.id:

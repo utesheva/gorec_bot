@@ -185,11 +185,15 @@ async def register_kill(message: Message, state: FSMContext):
         callback_data='refuse'
     ))
     user = await db.get_user(str(message.from_user.id))
-    await message.bot.send_message(users[user[3]][4], "Подтвердите, что вы были убиты", reply_markup=check.as_markup)
+    if user[3]:
+        await message.bot.send_message(users[user[3]][4], "Подтвердите, что вы были убиты", reply_markup=check.as_markup)
+    else:
+        await message.answer('Игра ещё не началась.')
 
 
 @dp.callback_query(F.data == 'true')
 async def confirm_kill(message: Message, state: FSMContext):
+    db.make_dead(str(message.from_user.id))
     users = await db.get_alive()
     for user in users:
         victim = user[3]

@@ -188,10 +188,18 @@ async def confirm_kill(message: Message, state: FSMContext):
     for user in users:
         victim = user[3]
         if victim[4] == message.from_user.id:
-            #user[3].add_point()
+            await add_point(user[0])
             user[3] = victim[3]
-            #victim.is_dead()
             await message.bot.send_message(user[4], f"Подтверждение получено, вы получили свои баллы. Ваша новая жертва: {users[user[3]][1]}")
+            return
+        
+@dp.callback_query(F.data == 'refuse')
+async def reject_kill(message: Message, state: FSMContext):
+    users = await db.get_data()
+    for user in users:
+        victim = user[3]
+        if victim[4] == message.from_user.id:
+            await message.bot.send_message(user[4], f"Ваша жертва отказывается признавать свою смерть. Ожидайте решения администраторов")
             return
     
     

@@ -3,6 +3,8 @@ import random
 from config_reader import config
 
 
+new_point_system = False    #когда со множителями работаем
+
 async def get_connection():
     return await psycopg.AsyncConnection.connect(config.pg_link.get_secret_value())
 
@@ -14,7 +16,16 @@ async def register_user(tg_id: str, name: str, photo: str) -> None:
                 'INSERT INTO users (tg_id, name, photo) VALUES (%s, %s, %s)',
                 (tg_id, name, photo))
             await conn.commit()
-
+    await add_to_daily_db(tg_id)
+    
+async def add_to_daily_db(tg_id: str):
+    user = await get_user(tg_id)
+    async with await get_connection() as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute(
+                'INSERT INTO daily (id, score) VALUES (%s, %d)',
+                (user[0], 0))
+            await conn.commit()
 
 async def get_data() -> list:
     async with await get_connection() as conn:  
@@ -91,4 +102,25 @@ async def shuffle_players():
         await set_victim(players[i-1], players[i])
     await set_victim(players[-1], players[0])
     
+async def get_rating():
+    async with conn.cursor() as cursor:  
+        await cursor.execute('SELECT * FROM daily ORDER BY score DESC')
+        data = await cursor.fetchall()
+        await conn.commit()  
+    return data 
 
+async def add_point(id: str):
+    rating = await get_rating()
+    place, multiplier, prev_score = 0, 1, 0
+    for i in range(len(rating)):
+        if rating[i][0] == id:
+            prev_score = rating[i][1]
+            place = i+1
+    if place <= len(rating)/3:
+        multiplier = 0.5
+    elif place > 2*len(rating)/3:
+        multiplier = 1.5
+    async with await get_connection() as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute('UPDATE daily SET score=%d WHERE id=%d', (prev_score+multiplier, id))
+            await conn.commit()

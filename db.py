@@ -93,8 +93,8 @@ async def set_victim(id_current, id_victim: int):
 
 
 async def shuffle_players():
-    all_users = await get_data()
-    players = [i for i in all_users if not i[-1] ]
+    all_users = await get_alive()
+    players = [i for i in all_users if not i[-2]]
     if len(players) < 2:
         return []
     random.shuffle(players)
@@ -138,3 +138,12 @@ async def make_dead(tg_id: str):
         async with conn.cursor() as cursor:
             await cursor.execute('UPDATE users SET dead=%s WHERE tg_id=%s', (True, tg_id))
             await conn.commit()
+
+async def get_alive(tg_id: str):
+    async with await get_connection() as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute('SELECT * FROM users WHERE dead=%s', (False,))
+            data = await cursor.fetchall()
+            await conn.commit()
+    return data
+

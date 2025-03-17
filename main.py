@@ -180,9 +180,12 @@ async def send_victims(message: Message, state: FSMContext):
 @dp.message(F.text, Command("rating"))
 async def get_rating(message: Message, state: FSMContext):
     rating = await db.get_rating()
+    s = ""
     for i in range(len(rating)):
         user = await db.get_user_by_id(rating[i][0])
-        await message.answer(f"{i+1} место: {user[1]}")
+        print(user)
+        s += f"{i+1} место: {user[1]}\n"
+    await message.answer(s)
     await state.clear()
 
 

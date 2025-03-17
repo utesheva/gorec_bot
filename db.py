@@ -23,7 +23,7 @@ async def add_to_daily_db(tg_id: str):
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
             await cursor.execute(
-                'INSERT INTO daily (id, score) VALUES (%s, %d)',
+                'INSERT INTO daily (id, score) VALUES (%s, %s)',
                 (user[0], 0))
             await conn.commit()
 
@@ -88,7 +88,7 @@ async def make_admin(tg_id: str):
 async def set_victim(id_current, id_victim: int):
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
-            await cursor.execute('UPDATE users SET victim=%d WHERE user_id=%d', (id_victim, id_current))
+            await cursor.execute('UPDATE users SET victim=%s WHERE user_id=%s', (id_victim, id_current))
             await conn.commit()
 
 
@@ -99,10 +99,9 @@ async def shuffle_players():
     random.shuffle(players)
     await make_alive(players[0][4])
     for i in range(1, len(players)):
-        await set_victim(players[i-1], players[i])
+        await set_victim(players[i-1][0], players[i][0])
         await make_alive(players[i][4])
-    await set_victim(players[-1], players[0])
-    
+    await set_victim(players[-1][0], players[0][0])
     
     
 async def get_rating():
@@ -126,7 +125,7 @@ async def add_point(id: str):
         multiplier = 1.5
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
-            await cursor.execute('UPDATE daily SET score=%d WHERE id=%d', (prev_score+multiplier, id))
+            await cursor.execute('UPDATE daily SET score=%s WHERE id=%s', (prev_score+multiplier, id))
             await conn.commit()
 
 async def is_dead(tg_id: str):

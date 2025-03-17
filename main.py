@@ -64,7 +64,7 @@ async def registration(callback: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query(F.data == 'fix')
-async def registration(callback: CallbackQuery, state: FSMContext):
+async def fix_registration(callback: CallbackQuery, state: FSMContext):
     await db.delete_user(str(callback.from_user.id))
     await callback.message.answer('Введите ФИО')
     await state.set_state(Registration.name)

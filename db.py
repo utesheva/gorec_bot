@@ -24,7 +24,7 @@ async def add_to_daily_db(tg_id: str):
         async with conn.cursor() as cursor:
             await cursor.execute(
                 'INSERT INTO daily (id, score) VALUES (%s, %s)',
-                (str(user[0]), 0))
+                (str(user[0][0]), 0))
             await conn.commit()
 
 async def get_data() -> list:
@@ -63,10 +63,13 @@ async def get_user(tg_id: str) -> tuple:
 
 
 async def delete_user(tg_id : str) -> None:
+    user_id = await get_user(tg_id)
     async with await get_connection() as conn: 
         async with conn.cursor() as cursor:
             await cursor.execute(
                 'DELETE FROM users WHERE tg_id=%s', (tg_id,))
+            await cursor.execute(
+                'DELETE FROM daily WHERE id=%s', (user_id[0][0],))
             await conn.commit()
 
 

@@ -170,10 +170,9 @@ async def send_victims(message: Message, state: FSMContext):
 
     users = await db.get_tg_ids()
     for user_id in users:
-        victim = await db.get_victim(str(user_id[0]))
-        victim_data = await db.get_user_by_id(victim)
+        victim = await db.get_user_by_id(user_id[3])
         try:
-            await message.bot.send_photo(chat_id=user_id[0], photo=victim_data[2], caption=f"Твоя жерва: {victim_data[1]}")
+            await message.bot.send_photo(chat_id=user_id[0], photo=victim[2], caption=f"Твоя жерва: {victim[1]}")
         except Exception as e:
             logging.error(f"Не удалось отправить сообщение пользователю {user_id[0]}: {e}")
     await message.answer('Рассылка завершена.')
@@ -247,7 +246,8 @@ async def help(message: Message, state: FSMContext):
 1) /kill - атаковать жертву
 2) /rating - вывести текущий рейтинг'''
     if await db.is_admin(str(message.from_user.id)):
-        s += '''3) /shuffle_players - перемешать игроков (делать каждое утро перед началом игры)
+        s += '''
+3) /shuffle_players - перемешать игроков (делать каждое утро перед началом игры)
 4) /send_message - сделать рассылку всем игрокам
 5) /change_point_system - поменять систему начисления баллов. Изначально - всем по 1 баллу за убийство'''
     await message.answer(s)

@@ -173,5 +173,5 @@ async def get_user_by_id(bd_id: str) -> tuple:
             await cursor.execute('SELECT * FROM users WHERE user_id=%s', (str(bd_id),))
             data = await cursor.fetchall()
             await conn.commit()
-    return None if len(data) == 0 else data[0]
+    return data
 

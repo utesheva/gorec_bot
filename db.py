@@ -167,7 +167,7 @@ async def get_killer(tg_id: str):
             await conn.commit()    
     return None if len(data) == 0 else data[0][0]
 
-async def get_user_by_id(bd_id: str) -> tuple:
+async def get_user_by_id(bd_id: str):
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
             await cursor.execute('SELECT * FROM users WHERE user_id=%s', (str(bd_id),))

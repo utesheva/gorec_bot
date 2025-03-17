@@ -37,7 +37,7 @@ async def command_start_handler(message: Message, state: FSMContext) -> None:
         callback_data="registration")
     )
     await message.answer(texts.greeting, 
-                         reply_markup = registr.as_markup())
+                         reply_markup = registr.as_markup(), parse_mode=ParseMode.HTML)
 
 
 @dp.callback_query(F.data == 'registration')
@@ -55,7 +55,8 @@ async def registration(callback: CallbackQuery, state: FSMContext):
              text = 'Редактировать',
              callback_data='fix'
         ))
-        await callback.message.answer_photo(user[2], f"Вы уже зарегестрированы со следующими данными.\n\nФИО: {user[1]}\n\nФото: \n\nХотите изменить?",
+        print(user)
+        await callback.message.answer_photo(user[0][2], f"Вы уже зарегестрированы со следующими данными.\n\nФИО: {user[0][1]}\n\nФото: \n\nХотите изменить?",
                                       reply_markup = check.as_markup())
         return
     await callback.message.answer('Введите ваше ФИО:')
@@ -182,11 +183,15 @@ async def send_victims(message: Message, state: FSMContext):
 @dp.message(F.text, Command("rating"))
 async def get_rating(message: Message, state: FSMContext):
     rating = await db.get_rating()
+    print(rating)
     s = ""
+    k = 1
     for i in range(len(rating)):
         user = await db.get_user_by_id(rating[i][0])
         print(user)
-        s += f"{i+1} место: {user[1]}\n"
+        if user:
+            s += f"{k} место: {user[0][1]}\n"
+            k += 1
     await message.answer(s)
     await state.clear()
 

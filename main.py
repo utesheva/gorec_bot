@@ -52,27 +52,27 @@ async def registration(callback: CallbackQuery, state: FSMContext):
              callback_data='wait'
         ))
         check.add(InlineKeyboardButton(
-             text = 'Исправить',
+             text = 'Редактировать',
              callback_data='fix'
         ))
         await callback.message.answer_photo(user[2], f"Вы уже зарегестрированы со следующими данными.\n\nФИО: {user[1]}\n\nФото: \n\nХотите изменить?",
                                       reply_markup = check.as_markup())
         return
-    await callback.message.answer('Введите ФИО')
+    await callback.message.answer('Введите ваше ФИО:')
     await state.set_state(Registration.name)
 
 
 @dp.callback_query(F.data == 'fix')
 async def fix_registration(callback: CallbackQuery, state: FSMContext):
     await db.delete_user(str(callback.from_user.id))
-    await callback.message.answer('Введите ФИО')
+    await callback.message.answer('Введите ваше ФИО:')
     await state.set_state(Registration.name)
 
 
 @dp.message(F.text, Registration.name)
 async def process_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
-    await message.answer('Отправьте фото:')
+    await message.answer('Отправьте вашу фотографию:')
     await state.set_state(Registration.photo)
 
 
@@ -83,7 +83,7 @@ async def process_photo(message: Message, state: FSMContext):
     except Exception as e:
         await message.answer('Ошибка в регистрации, пройдите её заново')
         await state.clear()
-        await callback.message.answer('Введите ФИО')
+        await callback.message.answer('Введите ваше ФИО:')
         await state.set_state(Registration.name)
         return
     await state.update_data(photo=photo_link)
@@ -94,7 +94,7 @@ async def process_photo(message: Message, state: FSMContext):
         callback_data="finish_registration")
     )
     check.add(InlineKeyboardButton(
-        text = 'Исправить',
+        text = 'Редактировать',
         callback_data='registration'
     ))
 
@@ -106,7 +106,9 @@ async def finish_registration(callback: CallbackQuery, state: FSMContext):
     global bot
     data = await state.get_data()
     await db.register_user(callback.from_user.id, data['name'], data['photo'])
-    await callback.message.answer('Вы успешно прошли регистрацию! Ждите дальнейших указаний')
+    await callback.message.answer('''Поздравляю! Вы успешно прошли регистрацию.
+
+Ждите дальнейших указаний ☠️''')
     await bot.send_photo(chat_id=ADMIN, photo=data['photo'], caption=f"Новый участник: {data['name']}")
     await state.clear()
 
@@ -171,9 +173,9 @@ async def send_victims(message: Message, state: FSMContext):
     for user in shuffled_players:
         victim = await db.get_user(user[3])
         try:
-            await message.bot.send_photo(chat_id=user[0], photo=victim[2], caption=f"Твоя жерва: {victim[1]}")
+            await message.bot.send_photo(chat_id=user[0], photo=victim[2], caption=f"Ваша жертва: {victim[1]}")
         except Exception as e:
-            logging.error(f"Не удалось отправить сообщение пользователю {user_id[0]}: {e}")
+            logging.error(f"Не удалось отправить сообщение пользователю {user[0]}: {e}")
     await message.answer('Рассылка завершена.')
     await state.clear()
     

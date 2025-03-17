@@ -102,6 +102,7 @@ async def shuffle_players():
         await set_victim(players[i-1][0], players[i][0])
         await make_alive(players[i][4])
     await set_victim(players[-1][0], players[0][0])
+    return players
     
     
 async def get_rating():

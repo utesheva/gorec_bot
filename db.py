@@ -148,7 +148,7 @@ async def make_alive(tg_id: str):
             await cursor.execute('UPDATE users SET dead=%s WHERE tg_id=%s', (False, tg_id))
             await conn.commit()
 
-async def get_alive(tg_id: str):
+async def get_alive():
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
             await cursor.execute('SELECT * FROM users WHERE dead=%s', (False,))

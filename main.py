@@ -167,6 +167,13 @@ async def send_victims(message: Message, state: FSMContext):
             logging.error(f"Не удалось отправить сообщение пользователю {user[0]}: {e}")
     await message.answer('Рассылка завершена.')
     await state.clear()
+    
+@dp.message(F.text, Command("rating"))
+async def get_rating(message: Message, state: FSMContext):
+    rating = await db.get_rating()
+    for i in range(len(rating)):
+        await message.answer(f"{i+1} место: {rating[i]}")
+    await state.clear()
 
 
 @dp.message(F.text, Command("kill"))
@@ -191,7 +198,7 @@ async def register_kill(message: Message, state: FSMContext):
         await message.answer('Игра ещё не началась.')
 
 
-@dp.callback_query(F.data == 'true')
+@dp.callback_query(F.data == 'agree')
 async def confirm_kill(message: Message, state: FSMContext):
     db.make_dead(str(message.from_user.id))
     users = await db.get_alive()

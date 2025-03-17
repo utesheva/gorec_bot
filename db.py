@@ -93,20 +93,24 @@ async def set_victim(id_current, id_victim: int):
 
 
 async def shuffle_players():
-    all_users = await get_alive()
-    players = [i for i in all_users if not i[-2]]
+    players = await get_data()
     if len(players) < 2:
         return []
     random.shuffle(players)
+    await make_alive(players[0][4])
     for i in range(1, len(players)):
         await set_victim(players[i-1], players[i])
+        await make_alive(players[i][4])
     await set_victim(players[-1], players[0])
     
+    
+    
 async def get_rating():
-    async with conn.cursor() as cursor:  
-        await cursor.execute('SELECT * FROM daily ORDER BY score DESC')
-        data = await cursor.fetchall()
-        await conn.commit()  
+    async with await get_connection() as conn:
+        async with conn.cursor() as cursor:  
+            await cursor.execute('SELECT * FROM daily ORDER BY score DESC')
+            data = await cursor.fetchall()
+            await conn.commit()  
     return data 
 
 async def add_point(id: str):
@@ -137,6 +141,12 @@ async def make_dead(tg_id: str):
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
             await cursor.execute('UPDATE users SET dead=%s WHERE tg_id=%s', (True, tg_id))
+            await conn.commit()
+
+async def make_alive(tg_id: str):
+    async with await get_connection() as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute('UPDATE users SET dead=%s WHERE tg_id=%s', (False, tg_id))
             await conn.commit()
 
 async def get_alive(tg_id: str):

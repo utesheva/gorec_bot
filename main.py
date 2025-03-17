@@ -171,8 +171,9 @@ async def send_victims(message: Message, state: FSMContext):
     users = await db.get_tg_ids()
     for user_id in users:
         victim = await db.get_victim(str(user_id[0]))
+        victim_data = await db.get_user(victim)
         try:
-            await message.bot.send_message(user_id[0], f"Твоя жерва: {victim}")
+            await message.bot.send_photo(user_id[0], victim_data[2], f"Твоя жерва: {victim_data[1]}")
         except Exception as e:
             logging.error(f"Не удалось отправить сообщение пользователю {user_id[0]}: {e}")
     await message.answer('Рассылка завершена.')

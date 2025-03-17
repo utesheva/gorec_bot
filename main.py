@@ -21,9 +21,8 @@ from aiogram.fsm.state import StatesGroup, State
 TOKEN = config.bot_token.get_secret_value()
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
-
-def get_link():
-    return 'no photo support yet'
+bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+ADMIN = config.admin.get_secret_value()
 
 class Registration(StatesGroup):
     name = State()
@@ -56,7 +55,7 @@ async def registration(callback: CallbackQuery, state: FSMContext):
              text = 'Исправить',
              callback_data='fix'
         ))
-        await callback.message.answer(f"Вы уже зарегестрированы со следующими данными.\n\nФИО: {user[1]}\n\nФото: {user[2]}\n\nХотите изменить?",
+        await callback.message.answer_photo(user[2], f"Вы уже зарегестрированы со следующими данными.\n\nФИО: {user[1]}\n\nФото: \n\nХотите изменить?",
                                       reply_markup = check.as_markup())
         return
     await callback.message.answer('Введите ФИО')
@@ -73,13 +72,20 @@ async def fix_registration(callback: CallbackQuery, state: FSMContext):
 @dp.message(F.text, Registration.name)
 async def process_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
-    await message.answer('Введите группу')
+    await message.answer('Отправьте фото:')
     await state.set_state(Registration.photo)
 
 
-@dp.message(F.text, Registration.photo)
+@dp.message(Registration.photo)
 async def process_photo(message: Message, state: FSMContext):
-    photo_link = get_link()
+    try:
+        photo_link = message.photo[-1].file_id
+    except Exception as e:
+        await message.answer('Ошибка в регистрации, пройдите её заново')
+        await state.clear()
+        await callback.message.answer('Введите ФИО')
+        await state.set_state(Registration.name)
+        return
     await state.update_data(photo=photo_link)
     data = await state.get_data()
     check = InlineKeyboardBuilder()
@@ -91,15 +97,17 @@ async def process_photo(message: Message, state: FSMContext):
         text = 'Исправить',
         callback_data='registration'
     ))
-    await message.answer(f"Ваши данные:\n\nФИО: {data['name']}\n\nФото: {data['photo']}",
-                         reply_markup = check.as_markup())
 
+    await message.answer_photo(photo_link, caption=f"Ваши данные:\n\nФИО: {data['name']}\n\nФото: ",
+                         reply_markup = check.as_markup())
 
 @dp.callback_query(F.data == 'finish_registration')
 async def finish_registration(callback: CallbackQuery, state: FSMContext):
+    global bot
     data = await state.get_data()
     await db.register_user(callback.from_user.id, data['name'], data['photo'])
     await callback.message.answer('Вы успешно прошли регистрацию! Ждите дальнейших указаний')
+    await bot.send_photo(chat_id=ADMIN, photo=data['photo'], caption=f"Новый участник: {data['name']}")
     await state.clear()
 
 
@@ -207,7 +215,8 @@ async def confirm_kill(message: Message, state: FSMContext):
     killer = await db.get_killer(str(message.from_user.id))
     new_victim = await db.get_victim(str(message.from_user.id))
     await db.set_victim(str(killer), new_victim)
-    await message.bot.send_message(int(killer), f"Подтверждение получено, вы получили свои баллы. Ваша новая жертва: {await db.get_user(new_victim)}")
+    victim_data = await db.get_user(new_victim)
+    await message.bot.send_photo(killer, victim_data[2], f"Подтверждение получено, вы получили свои баллы. Ваша новая жертва: {victim_data[1]}")
 
 
 @dp.callback_query(F.data == 'refuse')
@@ -217,7 +226,6 @@ async def reject_kill(message: Message, state: FSMContext):
     
 
 async def main() -> None:
-    bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     await dp.start_polling(bot)
 
 

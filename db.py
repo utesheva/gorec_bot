@@ -93,7 +93,8 @@ async def set_victim(id_current, id_victim: int):
 
 
 async def shuffle_players():
-    players = await get_data()
+    users = await get_data()
+    players = [i for i in users if not i[5]]
     if len(players) < 2:
         return []
     random.shuffle(players)
@@ -120,9 +121,9 @@ async def add_point(id: str):
         if rating[i][0] == id:
             prev_score = rating[i][1]
             place = i+1
-    if place <= len(rating)/3:
+    if place <= len(rating)/3 and new_point_system:
         multiplier = 0.5
-    elif place > 2*len(rating)/3:
+    elif place > 2*len(rating)/3 and new_point_system:
         multiplier = 1.5
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
@@ -156,15 +157,6 @@ async def get_alive():
             data = await cursor.fetchall()
             await conn.commit()
     return data
-
-
-async def get_victim(tg_id: str):
-    async with await get_connection() as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('SELECT victim FROM users WHERE tg_id=%s', (tg_id,))
-            data = await cursor.fetchall()
-            await conn.commit()
-    return None if len(data) == 0 else data[0][0]
 
 
 async def get_killer(tg_id: str):

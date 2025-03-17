@@ -183,7 +183,8 @@ async def send_victims(message: Message, state: FSMContext):
 async def get_rating(message: Message, state: FSMContext):
     rating = await db.get_rating()
     for i in range(len(rating)):
-        await message.answer(f"{i+1} место: {rating[i]}")
+        user = await db.get_user_by_id(rating[i][0])
+        await message.answer(f"{i+1} место: {user[1]}")
     await state.clear()
 
 
@@ -204,10 +205,8 @@ async def register_kill(message: Message, state: FSMContext):
     ))
     user = await db.get_user(str(message.from_user.id))
     if user[3]:
-        victim = await db.get_victim(str(message.from_user.id))
-        victim_data = await db.get_user_by_id(victim)
-        print(victim_data)
-        await message.bot.send_message(victim_data[4], "Подтвердите, что вы были убиты", reply_markup=check.as_markup())
+        victim = await db.get_user_by_id(user[3])
+        await message.bot.send_message(victim[4], "Подтвердите, что вы были убиты", reply_markup=check.as_markup())
     else:
         await message.answer('Игра ещё не началась.')
 
@@ -218,6 +217,7 @@ async def confirm_kill(message: Message, state: FSMContext):
     killer = await db.get_killer(str(message.from_user.id))
     killer_data = await db.get_user_by_id(killer)
     new_victim = await db.get_victim(str(message.from_user.id))
+    db.add_point(killer)
     await db.set_victim(str(killer), new_victim)
     victim_data = await db.get_user_by_id(new_victim)
     await message.bot.send_photo(killer_data[4], victim_data[2], f"Подтверждение получено, вы получили свои баллы. Ваша новая жертва: {victim_data[1]}")
@@ -228,6 +228,31 @@ async def reject_kill(message: Message, state: FSMContext):
     killer = await db.get_killer(str(message.from_user.id))
     await message.bot.send_message(int(killer), f"Ваша жертва отказывается признавать свою смерть. Ожидайте решения администраторов")
     
+    
+@dp.message(F.text, Command("change_point_system"))
+async def change_point_system(message: Message, state: FSMContext):
+    if not await db.is_admin(str(message.from_user.id)):
+        await message.answer('У вас нет прав администратора.')
+        return
+    db.new_point_system = not db.new_point_system
+    if db.new_point_system:
+        await message.answer("Сейчас баллы будут начисляться с множителями в зависимости от места в рейтинге")
+    else:
+        await message.answer("Сейчас за любое убийство будет начисляться 1 балл")
+    await state.clear()
+    
+@dp.message(F.text, Command("help"))
+async def help(message: Message, state: FSMContext):
+    s = '''Доступные команды:
+1) /kill - атаковать жертву
+2) /rating - вывести текущий рейтинг'''
+    if await db.is_admin(str(message.from_user.id)):
+        s += '''3) /shuffle_players - перемешать игроков (делать каждое утро перед началом игры)
+4) /send_message - сделать рассылку всем игрокам
+5) /change_point_system - поменять систему начисления баллов. Изначально - всем по 1 баллу за убийство'''
+    await message.answer(s)
+    await state.clear()
+
 
 async def main() -> None:
     await dp.start_polling(bot)

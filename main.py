@@ -206,7 +206,7 @@ async def register_kill(message: Message, state: FSMContext):
     if user[3]:
         victim = await db.get_victim(str(message.from_user.id))
         victim_data = await db.get_user_by_id(victim)
-        await message.bot.send_message(victim[4], "Подтвердите, что вы были убиты", reply_markup=check.as_markup)
+        await message.bot.send_message(victim_data[4], "Подтвердите, что вы были убиты", reply_markup=check.as_markup)
     else:
         await message.answer('Игра ещё не началась.')
 

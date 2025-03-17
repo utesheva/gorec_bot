@@ -171,9 +171,9 @@ async def send_victims(message: Message, state: FSMContext):
     users = await db.get_tg_ids()
     for user_id in users:
         victim = await db.get_victim(str(user_id[0]))
-        victim_data = await db.get_user(victim)
+        victim_data = await db.get_user_by_id(victim)
         try:
-            await message.bot.send_photo(user_id[0], victim_data[2], f"Твоя жерва: {victim_data[1]}")
+            await message.bot.send_photo(chat_id=user_id[0], photo=victim_data[2], caption=f"Твоя жерва: {victim_data[1]}")
         except Exception as e:
             logging.error(f"Не удалось отправить сообщение пользователю {user_id[0]}: {e}")
     await message.answer('Рассылка завершена.')
@@ -205,7 +205,8 @@ async def register_kill(message: Message, state: FSMContext):
     user = await db.get_user(str(message.from_user.id))
     if user[3]:
         victim = await db.get_victim(str(message.from_user.id))
-        await message.bot.send_message(victim, "Подтвердите, что вы были убиты", reply_markup=check.as_markup)
+        victim_data = await db.get_user_by_id(victim)
+        await message.bot.send_message(victim[4], "Подтвердите, что вы были убиты", reply_markup=check.as_markup)
     else:
         await message.answer('Игра ещё не началась.')
 
@@ -214,10 +215,11 @@ async def register_kill(message: Message, state: FSMContext):
 async def confirm_kill(message: Message, state: FSMContext):
     await db.make_dead(str(message.from_user.id))
     killer = await db.get_killer(str(message.from_user.id))
+    killer_data = await db.get_user_by_id(killer)
     new_victim = await db.get_victim(str(message.from_user.id))
     await db.set_victim(str(killer), new_victim)
-    victim_data = await db.get_user(new_victim)
-    await message.bot.send_photo(killer, victim_data[2], f"Подтверждение получено, вы получили свои баллы. Ваша новая жертва: {victim_data[1]}")
+    victim_data = await db.get_user_by_id(new_victim)
+    await message.bot.send_photo(killer_data[4], victim_data[2], f"Подтверждение получено, вы получили свои баллы. Ваша новая жертва: {victim_data[1]}")
 
 
 @dp.callback_query(F.data == 'refuse')

@@ -59,7 +59,7 @@ async def get_user(tg_id: str) -> tuple:
             await cursor.execute('SELECT * FROM users WHERE tg_id=%s', (str(tg_id),))
             data = await cursor.fetchall()
             await conn.commit()  
-    return None if len(data) == 0 else data[0]
+    return data
 
 
 async def delete_user(tg_id : str) -> None:

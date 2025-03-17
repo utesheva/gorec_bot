@@ -168,11 +168,10 @@ async def send_victims(message: Message, state: FSMContext):
         await message.answer('Для старта игры недостаточно игроков')
         return
 
-    users = await db.get_tg_ids()
-    for user_id in users:
-        victim = await db.get_user_by_id(user_id[3])
+    for user in shuffled_players:
+        victim = await db.get_user(user[3])
         try:
-            await message.bot.send_photo(chat_id=user_id[0], photo=victim[2], caption=f"Твоя жерва: {victim[1]}")
+            await message.bot.send_photo(chat_id=user[0], photo=victim[2], caption=f"Твоя жерва: {victim[1]}")
         except Exception as e:
             logging.error(f"Не удалось отправить сообщение пользователю {user_id[0]}: {e}")
     await message.answer('Рассылка завершена.')

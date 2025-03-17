@@ -128,7 +128,6 @@ async def get_access(message: Message, state: FSMContext):
     await state.clear()
 
 
-
 @dp.message(F.text, Command('send_message'))
 async def broadcast_command(message: Message, state: FSMContext):
     if not await db.is_admin(str(message.from_user.id)):
@@ -155,16 +154,19 @@ async def send_victims(message: Message, state: FSMContext):
     if not await db.is_admin(str(message.from_user.id)):
         await message.answer('У вас нет прав администратора.')
         return
+
     shuffled_players = await db.shuffle_players()
     if len(shuffled_players) == 0:
         await message.answer('Для старта игры недостаточно игроков')
         return
-    users = await db.get_alive()
-    for user in users:
+
+    users = await db.get_tg_ids()
+    for user_id in users:
+        victim = await db.get_victim(str(user_id[0]))
         try:
-            await message.bot.send_message(user[4], f"Your victim is {users[user[3]][1]}")
+            await message.bot.send_message(user_id[0], f"Твоя жерва: {victim}")
         except Exception as e:
-            logging.error(f"Не удалось отправить сообщение пользователю {user[0]}: {e}")
+            logging.error(f"Не удалось отправить сообщение пользователю {user_id[0]}: {e}")
     await message.answer('Рассылка завершена.')
     await state.clear()
     
@@ -193,34 +195,27 @@ async def register_kill(message: Message, state: FSMContext):
     ))
     user = await db.get_user(str(message.from_user.id))
     if user[3]:
-        await message.bot.send_message(users[user[3]][4], "Подтвердите, что вы были убиты", reply_markup=check.as_markup)
+        victim = await db.get_victim(str(message.from_user.id))
+        await message.bot.send_message(victim, "Подтвердите, что вы были убиты", reply_markup=check.as_markup)
     else:
         await message.answer('Игра ещё не началась.')
 
 
 @dp.callback_query(F.data == 'agree')
 async def confirm_kill(message: Message, state: FSMContext):
-    db.make_dead(str(message.from_user.id))
-    users = await db.get_alive()
-    for user in users:
-        victim = user[3]
-        if victim[4] == message.from_user.id:
-            await add_point(user[0])
-            user[3] = victim[3]
-            await message.bot.send_message(user[4], f"Подтверждение получено, вы получили свои баллы. Ваша новая жертва: {users[user[3]][1]}")
-            return
+    await db.make_dead(str(message.from_user.id))
+    killer = await db.get_killer(str(message.from_user.id))
+    new_victim = await db.get_victim(str(message.from_user.id))
+    await db.set_victim(str(killer), new_victim)
+    await message.bot.send_message(int(killer), f"Подтверждение получено, вы получили свои баллы. Ваша новая жертва: {await db.get_user(new_victim)}")
 
 
 @dp.callback_query(F.data == 'refuse')
 async def reject_kill(message: Message, state: FSMContext):
-    users = await db.get_alive()
-    for user in users:
-        victim = user[3]
-        if victim[4] == message.from_user.id:
-            await message.bot.send_message(user[4], f"Ваша жертва отказывается признавать свою смерть. Ожидайте решения администраторов")
-            return
+    killer = await db.get_killer(str(message.from_user.id))
+    await message.bot.send_message(int(killer), f"Ваша жертва отказывается признавать свою смерть. Ожидайте решения администраторов")
     
-    
+
 async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     await dp.start_polling(bot)

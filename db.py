@@ -156,3 +156,21 @@ async def get_alive():
             await conn.commit()
     return data
 
+
+async def get_victim(tg_id: str):
+    async with await get_connection() as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute('SELECT victim FROM users WHERE tg_id=%s', (tg_id,))
+            data = await cursor.fetchall()
+            await conn.commit()
+    return None if len(data) == 0 else data[0][0]
+
+
+async def get_killer(tg_id: str):
+    async with await get_connection() as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute('SELECT tg_id FROM users WHERE victim=%s', (tg_id,))
+            data = await cursor.fetchall()
+            await conn.commit()    
+    return None if len(data) == 0 else data[0][0]
+

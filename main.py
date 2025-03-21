@@ -5,7 +5,7 @@ import sys
 from config_reader import config
 import db
 import texts
-from admin import Admin, Access
+from admin import Admin, Access, Private
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.enums import ParseMode
@@ -159,6 +159,26 @@ async def process_message(message: Message, state: FSMContext):
     await message.answer('Рассылка завершена.')
     await state.clear()
 
+@dp.message(F.text, Command('send_private_message'))
+async def broadcast_command(message: Message, state: FSMContext):
+    if not await db.is_admin(str(message.from_user.id)):
+        await message.answer('У вас нет прав администратора.')
+        return
+    await message.answer('Введите id:')
+    await state.set_state(Private.tg_id)
+
+@dp.message(Private.tg_id)
+async def process_private_message(message: Message, state: FSMContext):
+    await state.update_data(tg_id=message.text)
+    await message.answer('Введите сообщение:')
+    await state.set_state(Private.message)
+
+@dp.message(Private.message)
+async def process_private_message(message: Message, state: FSMContext):
+    data = await state.get_data()
+    await message.bot.send_message(data['tg_id'], message.text)
+    await message.answer('Рассылка завершена.')
+    await state.clear()
 
 @dp.message(F.text, Command("shuffle_players"))
 async def send_victims(message: Message, state: FSMContext):

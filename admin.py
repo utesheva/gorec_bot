@@ -6,4 +6,6 @@ class Admin(StatesGroup):
 class Access(StatesGroup):
     password = State()
 
-
+class Private(StatesGroup):
+    tg_id = State()
+    message = State()

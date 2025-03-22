@@ -190,11 +190,12 @@ async def send_victims(message: Message, state: FSMContext):
     if len(shuffled_players) == 0:
         await message.answer('Для старта игры недостаточно игроков')
         return
-
+    print(shuffled_players)
     for user in shuffled_players:
-        victim = await db.get_user(user[3])
+        victim = await db.get_user_by_id(user[3])
+        print(user, victim)
         try:
-            await message.bot.send_photo(chat_id=user[0], photo=victim[2], caption=f"Ваша жертва: {victim[1]}")
+            await message.bot.send_photo(chat_id=user[4], photo=victim[0][2], caption=f"Ваша жертва: {victim[0][1]}")
         except Exception as e:
             logging.error(f"Не удалось отправить сообщение пользователю {user[0]}: {e}")
     await message.answer('Рассылка завершена.')
@@ -232,9 +233,9 @@ async def register_kill(message: Message, state: FSMContext):
         callback_data='refuse'
     ))
     user = await db.get_user(str(message.from_user.id))
-    if user[3]:
-        victim = await db.get_user_by_id(user[3])
-        await message.bot.send_message(victim[4], "Подтвердите, что вы были убиты", reply_markup=check.as_markup())
+    if user[0][3]:
+        victim = await db.get_user_by_id(user[0][3])
+        await message.bot.send_message(victim[0][4], "Подтвердите, что вы были убиты", reply_markup=check.as_markup())
     else:
         await message.answer('Игра ещё не началась.')
 
@@ -242,19 +243,22 @@ async def register_kill(message: Message, state: FSMContext):
 @dp.callback_query(F.data == 'agree')
 async def confirm_kill(message: Message, state: FSMContext):
     await db.make_dead(str(message.from_user.id))
-    killer = await db.get_killer(str(message.from_user.id))
-    killer_data = await db.get_user_by_id(killer)
-    new_victim = await db.get_victim(str(message.from_user.id))
-    db.add_point(killer)
-    await db.set_victim(str(killer), new_victim)
-    victim_data = await db.get_user_by_id(new_victim)
-    await message.bot.send_photo(killer_data[4], victim_data[2], f"Подтверждение получено, вы получили свои баллы. Ваша новая жертва: {victim_data[1]}")
+    me = await db.get_user(str(message.from_user.id))
+    killer = await db.get_killer(me[0][0])
+    print(killer)
+    await db.add_point(killer[0][0])
+    await db.set_victim(killer[0][0], me[0][3])
+    victim_data = await db.get_user_by_id(me[0][3])
+    await message.bot.send_photo(killer[0][4], victim_data[0][2], f"Подтверждение получено, вы получили свои баллы. Ваша новая жертва: {victim_data[0][1]}")
 
 
 @dp.callback_query(F.data == 'refuse')
 async def reject_kill(message: Message, state: FSMContext):
-    killer = await db.get_killer(str(message.from_user.id))
-    await message.bot.send_message(int(killer), f"Ваша жертва отказывается признавать свою смерть. Ожидайте решения администраторов")
+    me = await db.get_user(str(message.from_user.id))
+    print(me)
+    killer = await db.get_killer(me[0][0])
+    print(killer)
+    await message.bot.send_message(killer[0][4], f"Ваша жертва отказывается признавать свою смерть. Ожидайте решения администраторов")
     
     
 @dp.message(F.text, Command("change_point_system"))

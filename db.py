@@ -53,7 +53,7 @@ async def get_user_ids() -> list:
     return data
 
 
-async def get_user(tg_id: str) -> tuple:
+async def get_user(tg_id: str):
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:  
             await cursor.execute('SELECT * FROM users WHERE tg_id=%s', (str(tg_id),))
@@ -64,6 +64,7 @@ async def get_user(tg_id: str) -> tuple:
 
 async def delete_user(tg_id : str) -> None:
     user_id = await get_user(tg_id)
+    print(user_id)
     async with await get_connection() as conn: 
         async with conn.cursor() as cursor:
             await cursor.execute(
@@ -162,13 +163,13 @@ async def get_alive():
     return data
 
 
-async def get_killer(tg_id: str):
+async def get_killer(id):
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
-            await cursor.execute('SELECT tg_id FROM users WHERE victim=%s', (tg_id,))
+            await cursor.execute('SELECT * FROM users WHERE victim=%s', (id,))
             data = await cursor.fetchall()
             await conn.commit()    
-    return None if len(data) == 0 else data[0][0]
+    return data
 
 async def get_user_by_id(bd_id: str):
     async with await get_connection() as conn:

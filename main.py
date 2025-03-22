@@ -73,7 +73,7 @@ async def fix_registration(callback: CallbackQuery, state: FSMContext):
 @dp.message(F.text, Registration.name)
 async def process_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
-    await message.answer('Отправьте вашу фотографию:')
+    await message.answer('Отправьте фотографию, на которой хорошо видно ваше лицо(за прикрепление не вашей фотографии, предусматривается дисквалификация):')
     await state.set_state(Registration.photo)
 
 

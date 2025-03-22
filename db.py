@@ -89,10 +89,10 @@ async def make_admin(tg_id: str):
             await cursor.execute('UPDATE users SET admin=%s WHERE tg_id=%s', (True, tg_id))
             await conn.commit()
             
-async def set_victim(id_current, id_victim: int):
+async def set_victim(id_current, id_victim):
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
-            await cursor.execute('UPDATE users SET victim=%s WHERE user_id=%s', (id_victim, id_current))
+            await cursor.execute('UPDATE users SET victim=%s WHERE user_id=%s', (int(id_victim), int(id_current)))
             await conn.commit()
 
 

@@ -118,7 +118,7 @@ async def get_rating():
             await conn.commit()  
     return data 
 
-async def add_point(id: str):
+async def add_point(id):
     rating = await get_rating()
     place, multiplier, prev_score = 0, 1, 0
     for i in range(len(rating)):
@@ -131,13 +131,13 @@ async def add_point(id: str):
         multiplier = 1.5
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
-            await cursor.execute('UPDATE daily SET score=%s WHERE id=%s', (prev_score+multiplier, id))
+            await cursor.execute('UPDATE daily SET score=%s WHERE id=%s', (int(prev_score+multiplier), int(id)))
             await conn.commit()
 
 async def is_dead(tg_id: str):
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
-            await cursor.execute('SELECT dead FROM users WHERE tg_id=%s', (tg_id,))
+            await cursor.execute('SELECT dead FROM users WHERE tg_id=%s', (str(tg_id),))
             data = await cursor.fetchall()
             await conn.commit()
     return True if data[0][0] else False
@@ -145,7 +145,7 @@ async def is_dead(tg_id: str):
 async def make_dead(tg_id: str):
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
-            await cursor.execute('UPDATE users SET dead=%s WHERE tg_id=%s', (True, tg_id))
+            await cursor.execute('UPDATE users SET dead=%s WHERE tg_id=%s', (True, str(tg_id)))
             await conn.commit()
 
 async def make_alive(tg_id: str):

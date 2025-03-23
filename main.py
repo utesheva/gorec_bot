@@ -43,7 +43,6 @@ async def command_start_handler(message: Message, state: FSMContext) -> None:
 @dp.callback_query(F.data == 'registration')
 async def registration(callback: CallbackQuery, state: FSMContext):
     users = await db.get_tg_ids()
-    print(callback.from_user.id, users)
     if (str(callback.from_user.id),) in users:
         user = await db.get_user(str(callback.from_user.id))
         check = InlineKeyboardBuilder()
@@ -55,7 +54,6 @@ async def registration(callback: CallbackQuery, state: FSMContext):
              text = 'Редактировать',
              callback_data='fix'
         ))
-        print(user)
         await callback.message.answer_photo(user[0][2], f"Вы уже зарегестрированы со следующими данными.\n\nФИО: {user[0][1]}\n\nФото: \n\nХотите изменить?",
                                       reply_markup = check.as_markup())
         return
@@ -208,9 +206,8 @@ async def get_rating(message: Message, state: FSMContext):
     k = 1
     for i in range(len(rating)):
         user = await db.get_user_by_id(rating[i][0])
-        print(user)
         if user:
-            s += f"{k} место: {user[0][1]}\n"
+            s += f"{k} место: {user[0][1]}, {rating[i][1]} балл(ов)\n"
             k += 1
     await message.answer(s)
     await state.clear()
@@ -234,6 +231,7 @@ async def register_kill(message: Message, state: FSMContext):
     user = await db.get_user(str(message.from_user.id))
     if user[0][3]:
         victim = await db.get_user_by_id(user[0][3])
+        await message.answer("Вашей жертве отправлен запрос на подтверждение убийства. Ожидайте ответа")
         await message.bot.send_message(victim[0][4], "Подтвердите, что вы были убиты", reply_markup=check.as_markup())
     else:
         await message.answer('Игра ещё не началась.')
@@ -241,22 +239,25 @@ async def register_kill(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data == 'agree')
 async def confirm_kill(message: Message, state: FSMContext):
-    await db.make_dead(str(message.from_user.id))
     me = await db.get_user(str(message.from_user.id))
+    await db.make_dead(message.from_user.id)
     killer = await db.get_killer(me[0][0])
-    print(killer)
     await db.add_point(killer[0][0])
     await db.set_victim(killer[0][0], me[0][3])
     victim_data = await db.get_user_by_id(me[0][3])
-    await message.bot.send_photo(killer[0][4], victim_data[0][2], f"Подтверждение получено, вы получили свои баллы. Ваша новая жертва: {victim_data[0][1]}")
+    await message.answer("Вы были убиты. Отдыхайте до следующего дня и готовьте новую тактику!")
+    await message.bot.send_photo(killer[0][4], victim_data[0][2], f"Цель успешно ликвидирована. Очки начислены. Ваша новая жертва: {victim_data[0][1]}")
 
 
 @dp.callback_query(F.data == 'refuse')
 async def reject_kill(message: Message, state: FSMContext):
+    global bot
     me = await db.get_user(str(message.from_user.id))
     print(me)
     killer = await db.get_killer(me[0][0])
     print(killer)
+    await bot.send_message(ADMIN, f"Участник {me[0][1]} с tg_id {str(message.from_user.id)} отказывается принимать смерть от рук {killer[0][1]} с tg_id {killer[0][4]}")
+    await message.answer("Вы отказались признать свой проигрыш. Администраторы разберутся, кто тут прав, ждите скорейшего ответа!")
     await message.bot.send_message(killer[0][4], f"Ваша жертва отказывается признавать свою смерть. Ожидайте решения администраторов")
     
     
@@ -281,7 +282,8 @@ async def help(message: Message, state: FSMContext):
         s += '''
 3) /shuffle_players - перемешать игроков (делать каждое утро перед началом игры)
 4) /send_message - сделать рассылку всем игрокам
-5) /change_point_system - поменять систему начисления баллов. Изначально - всем по 1 баллу за убийство'''
+5) /change_point_system - поменять систему начисления баллов. Изначально - всем по 1 баллу за убийство
+6) /send_private_message - отправить сообщение в личку конкретному человеку по его chat_id'''
     await message.answer(s)
     await state.clear()
 

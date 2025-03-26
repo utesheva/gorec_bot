@@ -197,6 +197,17 @@ async def send_victims(message: Message, state: FSMContext):
             logging.error(f"Не удалось отправить сообщение пользователю {user[0]}: {e}")
     await message.answer('Рассылка завершена.')
     await state.clear()
+
+@dp.message(F.text, Command("show_players"))
+async def show_players(message: Message, state: FSMContext):
+    if not await db.is_admin(str(message.from_user.id)):
+        await message.answer('У вас нет прав администратора.')
+        return
+    players = await db.get_data()
+    for i in players:
+        await message.bot.send_photo(chat_id=message.from_user.id, photo = i[2], caption=str(i[1]))
+    await message.answer('Рассылка завершена.')
+
     
 @dp.message(F.text, Command("rating"))
 async def get_rating(message: Message, state: FSMContext):

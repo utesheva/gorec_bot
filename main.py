@@ -205,7 +205,7 @@ async def show_players(message: Message, state: FSMContext):
         return
     players = await db.get_data()
     for i in players:
-        await message.bot.send_photo(chat_id=message.from_user.id, photo = i[2], caption=str(i[1]))
+        await message.bot.send_photo(chat_id=message.from_user.id, photo = i[2], caption=f"{i[1]\nadmin:{i[-2]\ndead:i[-1]"))
     await message.answer('Рассылка завершена.')
 
     

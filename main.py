@@ -188,11 +188,10 @@ async def send_victims(message: Message, state: FSMContext):
     if len(shuffled_players) == 0:
         await message.answer('Для старта игры недостаточно игроков')
         return
-    print('shuffled players:', shuffled_players)
     for user in shuffled_players:
         victim = await db.get_user_by_id(user[3])
         try:
-            print(user, user[4], victim)
+            print(f'Send {user[1]} with id {user[4]}, victim {victim[0][1]} with id {victim[0][4]}')
             await message.bot.send_photo(chat_id=user[4], photo=victim[0][2], caption=f"Ваша жертва: {victim[0][1]}")
         except Exception as e:
             logging.error(f"Не удалось отправить сообщение пользователю {user[0]}: {e}")

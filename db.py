@@ -92,7 +92,7 @@ async def make_admin(tg_id: str):
 async def set_victim(id_current, id_victim):
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
-            await cursor.execute('UPDATE users SET victim=%s WHERE user_id=%s', (int(id_victim), int(id_current)))
+            await cursor.execute('UPDATE users SET victim=%s WHERE user_id=%s', (str(id_victim), str(id_current)))
             await conn.commit()
 
 
@@ -104,9 +104,15 @@ async def shuffle_players():
     random.shuffle(players)
     await make_alive(players[0][4])
     for i in range(1, len(players)):
+        players[i-1] = (players[i-1][0], players[i-1][1],
+                players[i-1][2], players[i][0], players[i-1][4],
+                players[i-1][5], players[i-1][6])
         await set_victim(players[i-1][0], players[i][0])
         await make_alive(players[i][4])
     await set_victim(players[-1][0], players[0][0])
+    players[-1] = (players[-1][0], players[-1][1],
+                players[-1][2], players[0][0], players[-1][4],
+                players[-1][5], players[-1][6])
     return players
     
     
@@ -131,7 +137,7 @@ async def add_point(id):
         multiplier = 1.5
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
-            await cursor.execute('UPDATE daily SET score=%s WHERE id=%s', (int(prev_score+multiplier), int(id)))
+            await cursor.execute('UPDATE daily SET score=%s WHERE id=%s', (int(prev_score+multiplier), str(id)))
             await conn.commit()
 
 async def is_dead(tg_id: str):
@@ -166,7 +172,7 @@ async def get_alive():
 async def get_killer(id):
     async with await get_connection() as conn:
         async with conn.cursor() as cursor:
-            await cursor.execute('SELECT * FROM users WHERE victim=%s', (id,))
+            await cursor.execute('SELECT * FROM users WHERE victim=%s', (str(id),))
             data = await cursor.fetchall()
             await conn.commit()    
     return data
@@ -178,4 +184,5 @@ async def get_user_by_id(bd_id: str):
             data = await cursor.fetchall()
             await conn.commit()
     return data
+
 
